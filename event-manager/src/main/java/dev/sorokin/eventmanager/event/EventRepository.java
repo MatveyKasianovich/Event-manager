@@ -86,4 +86,18 @@ public interface EventRepository extends JpaRepository<EventEntity,Long> {
     @Query("SELECT e FROM EventEntity e WHERE e.status = :status")
     List<EventEntity> findAllByStatus(@Param("status") String status);
 
+    @Query(value = """
+    SELECT EXISTS (
+        SELECT 1 FROM event e
+        JOIN locations l on l.id = e.location_id
+        WHERE e.location_id = :locationId
+          AND e.start_at < :endAt
+          AND e.start_at + e.duration_minutes * INTERVAL '1 minute' > :startAt
+    )
+    """, nativeQuery = true)
+    boolean existsIntersection(@Param("startAt") LocalDateTime startAt,
+                               @Param("endAt") LocalDateTime endAt,
+                               @Param("locationId") Long locationId);
+
+
 }

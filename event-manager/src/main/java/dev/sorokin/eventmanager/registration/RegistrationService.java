@@ -4,6 +4,7 @@ import dev.sorokin.eventmanager.event.Event;
 import dev.sorokin.eventmanager.event.EventEntity;
 import dev.sorokin.eventmanager.event.EventRepository;
 import dev.sorokin.eventmanager.event.EventStatus;
+import dev.sorokin.eventmanager.exceptionHandler.RegistrationConflictException;
 import dev.sorokin.eventmanager.mapper.EventMapper;
 import dev.sorokin.eventmanager.mapper.UserMapper;
 import dev.sorokin.eventmanager.security.SecurityUtils;
@@ -12,10 +13,13 @@ import dev.sorokin.eventmanager.user.UserEntity;
 import dev.sorokin.eventmanager.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -35,29 +39,42 @@ public class RegistrationService {
 
     @Transactional
     public void createRegistration(Long eventId) {
+        EventEntity eventEntity = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("No event with id=%s".formatted(eventId)));
 
-        EventEntity eventEntity=eventRepository.findById(eventId)
-                .orElseThrow(()->new EntityNotFoundException("No event with id=%s".formatted(eventId)));
+        Long currentUserId = SecurityUtils.getCurrentUserId();
 
-        if (eventEntity.getOccupiedPlaces() == eventEntity.getMaxPlaces()){
-            throw new IllegalArgumentException("This event is overcrowded");
-        }
-        else if(!eventEntity.getStatus().equals(EventStatus.WAIT_START.name())){
+        if (!eventEntity.getStatus().equals(EventStatus.WAIT_START.name())) {
             throw new IllegalArgumentException("Event has already started or cancelled");
         }
-
-        Long currentUserId=SecurityUtils.getCurrentUserId();
-        Optional<RegistrationEntity> registration = registrationRepository.findCurrentUserRegistrationOnEvent(currentUserId,eventId);
-        if(registration.isPresent()){
-            throw new IllegalArgumentException("User was already registered for event with id=%s".formatted(eventId));
-        }else {
-            eventEntity.setOccupiedPlaces(eventEntity.getOccupiedPlaces()+1);
-            registrationRepository.save(new RegistrationEntity(
-                    eventEntity,
-                    userRepository.getReferenceById(SecurityUtils.getCurrentUser().getId()),
-                    LocalDateTime.now()
-            ));
+        if (eventEntity.getOccupiedPlaces() >= eventEntity.getMaxPlaces()) {
+            throw new IllegalArgumentException("This event is overcrowded");
         }
+        if (Objects.equals(eventEntity.getOwnerId(), currentUserId)) {
+            throw new RegistrationConflictException("User is an event-owner");
+        }
+
+        if (registrationRepository.findCurrentUserRegistrationOnEvent(currentUserId, eventId).isPresent()) {
+            throw new RegistrationConflictException(
+                    "User was already registered for event with id=%s".formatted(eventId));
+        }
+
+        LocalDateTime start = eventEntity.getStartAt();
+        LocalDateTime end = start.plusMinutes(eventEntity.getDurationMinutes());
+
+        List<RegistrationEntity> overlapping =
+                registrationRepository.findAllCurrentUserRegistrationsOnThisTime(currentUserId, start, end);
+        if (overlapping.size()>2) {
+            throw new RegistrationConflictException(
+                    "User is already registered for 2 other event at this time");
+        }
+
+        eventEntity.setOccupiedPlaces(eventEntity.getOccupiedPlaces() + 1);
+        registrationRepository.save(new RegistrationEntity(
+                eventEntity,
+                userRepository.getReferenceById(currentUserId),
+                LocalDateTime.now()
+        ));
     }
 
     @Transactional

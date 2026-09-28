@@ -70,6 +70,13 @@ public class EventService {
                             .formatted(location.getCapacity(), eventToCreate.getMaxPlaces()));
         }
 
+        boolean eventsIntersect = eventRepository.existsIntersection(eventToCreate.getStartAt(),eventToCreate.getStartAt().plusMinutes(eventToCreate.getDurationMinutes()),eventToCreate.getLocationId());
+        if(eventsIntersect ){
+            throw new IllegalArgumentException(
+                    "Some event on this location has been already approved by this time"
+            );
+        }
+
         EventEntity entity = eventMapper.toEntityFromEvent(eventToCreate);
         EventEntity savedEntity = eventRepository.save(entity);
         Event createdEvent = eventMapper.toEventFromEntity(savedEntity);

@@ -72,6 +72,21 @@ public class GlobalExceptionHandler {
                 .body(errorDto);
     }
 
+    @ExceptionHandler(RegistrationConflictException.class)
+    public ResponseEntity<ErrorMessageResponse> handleRegistrationConflict(RegistrationConflictException e) {
+        log.warn("Registration conflict: {}", e.getMessage());
+
+        ErrorMessageResponse errorDto = new ErrorMessageResponse(
+                "Конфликт регистрации",
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorDto);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorMessageResponse> handleAccessDenied(AccessDeniedException e) {
         ErrorMessageResponse errorDto=new  ErrorMessageResponse(

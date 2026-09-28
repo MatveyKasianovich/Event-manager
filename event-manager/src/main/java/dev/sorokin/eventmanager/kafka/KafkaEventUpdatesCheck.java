@@ -6,6 +6,8 @@ import dev.sorokin.eventcommon.kafka.NotificationPayload;
 import dev.sorokin.eventmanager.event.Event;
 import dev.sorokin.eventmanager.registration.RegistrationEntity;
 import dev.sorokin.eventmanager.registration.RegistrationRepository;
+import dev.sorokin.eventmanager.security.SecurityUtils;
+import dev.sorokin.eventmanager.user.Role;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ public class KafkaEventUpdatesCheck {
     private final RegistrationRepository registrationRepository;
     private final KafkaSender kafkaSender;
 
+
     public KafkaEventUpdatesCheck(RegistrationRepository registrationRepository, KafkaSender kafkaSender) {
         this.registrationRepository = registrationRepository;
         this.kafkaSender = kafkaSender;
@@ -33,6 +36,9 @@ public class KafkaEventUpdatesCheck {
         }
 
         List<Long> subscribers = registrationRepository.findUserIdsByEventId(newEvent.getId());
+        if(SecurityUtils.getCurrentUserRole().equals(Role.ADMIN)){
+            subscribers.add(oldEvent.getOwnerId());
+        }
 
         NotificationPayload payload;
         String messageId = UUID.randomUUID().toString();
