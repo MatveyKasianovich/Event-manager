@@ -38,6 +38,7 @@ public class EventService {
     private final EventRepository eventRepository;
     private final KafkaEventUpdatesCheck kafkaEventUpdatesCheck;
     private final CacheService cacheService;
+    private static final String REDIS_LOCK_PREFIX = "event-lock:";
     private static final String REDIS_PREFIX = "event:";
     private final StringRedisTemplate stringRedisTemplate;
 
@@ -137,13 +138,13 @@ public class EventService {
     @Transactional
     public Event updateEventById(Event eventToUpdate, Long id) {
 
-        String lockedKey = REDIS_PREFIX + id;
+        String lockedKey = REDIS_LOCK_PREFIX + id;
         String token = UUID.randomUUID().toString();
 
-        Boolean locked = stringRedisTemplate.opsForValue()
-                .setIfAbsent(lockedKey, token, Duration.ofSeconds(30));
+        Boolean unLocked = stringRedisTemplate.opsForValue()
+                .setIfAbsent(lockedKey, token, Duration.ofSeconds(5));
 
-        if (Boolean.FALSE.equals(locked)) {
+        if (Boolean.FALSE.equals(unLocked)) {
             throw new AccessDeniedException("Event is being updated by another process");
         }
 

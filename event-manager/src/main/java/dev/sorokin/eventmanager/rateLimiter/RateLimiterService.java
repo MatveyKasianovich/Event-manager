@@ -26,10 +26,10 @@ public class RateLimiterService {
 
         Long hits = stringRedisTemplate.opsForValue().increment(key);
 
-        if (hits != null && hits == 1) {
+        if (hits == 1) {
             stringRedisTemplate.expire(key, windowSize);
         }
 
-        return hits != null && hits <= limit;
+        return  hits <= limit;
     }
 }

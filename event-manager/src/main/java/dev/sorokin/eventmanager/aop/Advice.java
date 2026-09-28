@@ -19,7 +19,7 @@ public class Advice {
     public Object logAround(ProceedingJoinPoint pjp) throws Throwable {
 
         long start = System.currentTimeMillis();
-        log.info("Вход в " + pjp.getSignature());
+        log.info("Вход в " + pjp.getSignature().getName());
 
         try {
             Object result = pjp.proceed();

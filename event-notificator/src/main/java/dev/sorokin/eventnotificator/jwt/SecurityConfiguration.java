@@ -49,6 +49,14 @@ public class SecurityConfiguration {
                                 HttpMethod.POST,
                                 "/notifications"
                         ).hasAnyAuthority("USER", "ADMIN")
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/openapi/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/error"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

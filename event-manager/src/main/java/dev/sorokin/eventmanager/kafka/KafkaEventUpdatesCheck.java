@@ -67,6 +67,7 @@ public class KafkaEventUpdatesCheck {
     }
 
     private List<NotificationChange> detectChanges(Event oldEvent, Event newEvent) {
+
         List<NotificationChange> changes = new ArrayList<>();
 
         if (!Objects.equals(oldEvent.getName(), newEvent.getName())) {

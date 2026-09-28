@@ -42,7 +42,7 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm
                         .sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
+                                SessionCreationPolicy.STATELESS//никогда не используй Http сессию
                         )
                 )
                 .exceptionHandling(ex -> ex
@@ -58,6 +58,8 @@ public class SecurityConfiguration {
                                 "/users/auth"
                         ).permitAll()
                         .requestMatchers("/actuator/**"
+                        ).permitAll()
+                        .requestMatchers("/error"
                         ).permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -111,6 +113,13 @@ public class SecurityConfiguration {
                                 HttpMethod.DELETE,
                                 "/registrations/cancel/*"
                         ).hasAuthority("USER")
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/openapi/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtTokenFilter, AnonymousAuthenticationFilter.class)
@@ -135,6 +144,4 @@ public class SecurityConfiguration {
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
-
-
 }

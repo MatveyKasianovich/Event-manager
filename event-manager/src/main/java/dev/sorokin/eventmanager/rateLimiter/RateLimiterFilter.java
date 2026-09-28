@@ -36,10 +36,8 @@ public class RateLimiterFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String client = Optional.ofNullable(request.getHeader("X-API-KEY"))
-                .filter(s -> !s.isEmpty())
-                .orElseGet(() -> Optional.ofNullable(request.getRemoteAddr())
-                        .orElse("unknown"));
+        String client = Optional.ofNullable(request.getRemoteAddr())
+                .orElse("unknown");
 
         boolean allowed = rateLimiterService.isAllowed(
                 client,
